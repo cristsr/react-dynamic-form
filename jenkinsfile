@@ -1,0 +1,132 @@
+@Library('devops-libraries@develop') _
+
+pipeline {
+  agent { label 'docker' } 
+
+  environment {
+    _GIT_VERSION = sh (returnStdout: true, script: 'git rev-parse HEAD | cut -c 1-10').trim()
+    _GIT_COMMIT_HASH = sh (returnStdout: true, script: 'git rev-parse HEAD').trim()
+    _APP_NAME = sh (returnStdout: true, script: "grep '\"name\":' package.json -m1 | awk -F\\\" '{print \$4}' ").trim()
+    _APP_VERSION = sh (returnStdout: true, script: "grep '\"version\":' package.json -m1 | awk -F\\\" '{print \$4}'").trim() 
+    }
+
+  stages {
+    stage('Install') {
+      steps {
+        script{
+          sh ("rm -f package-lock.json .npmrc")
+          container.run(
+            flags:"-v ${WORKSPACE}:/code/:Z -v npm-cache:/code/deps/:Z -v ${_NPM_BR_CONFIG_FILE}:/home/admindok/.npmrc:Z -w /code/",
+            dockerImage:"ubn.nodejs.npm:v12.17.0",
+            command:"npm --prefer-offline --no-audit install"
+          )
+
+          log.info('NPM INSTALL')
+        }
+      }//close steps
+    }//close stage - INSTALL
+
+    stage('Lint') {
+      steps {
+        script{
+          container.run(
+            flags:"-v ${WORKSPACE}:/code/:Z -w /code/",
+            dockerImage:"ubn.nodejs.npm:v12.17.0",
+            command:"npm run lint"
+          )
+
+          log.info('NPM LINT')
+        }
+      }//close steps
+    }//close stage - LINT
+    
+    stage('Test') {
+      steps {
+        script{
+          container.run(
+            flags:"-v ${WORKSPACE}:/code/:Z -w /code/",
+            dockerImage:"ubn.nodejs.npm:v12.17.0",
+            command:"npm run test"
+          )
+          log.info('NPM TEST')
+        }
+      }//close steps
+    }//close stage - TEST
+
+    stage ('SonarQube Analysis') {
+      steps {
+        script {
+          withSonarQubeEnv('SonarQubeQA') {
+            container.run(
+              flags: "-v sonar-cache:/home/admindok/.sonar/cache/:Z -v ${_SONAR_CO_SETTINGS}:/opt/sonar-scanner/conf/sonar-scanner.properties:Z -v ${WORKSPACE}:/code/:Z -w /code/",
+              dockerImage: "ubn.sonarqube.scanner:v4.2.0.1873",
+              command: "sonar-scanner -Dsonar.projectKey=${_APP_NAME} -Dsonar.projectName=${_APP_NAME} -Dsonar.projectVersion=${_APP_VERSION}"
+            )
+            log.info('SONAR')
+          }//close withSonarQubeEnv
+        }
+      }//close steps
+    }//close stage - SONAR ANALYSIS
+
+    stage ('Quality Gates') {
+      steps {
+        script {
+          //timeout(time: 3, unit: 'MINUTES'){ waitForQualityGate abortPipeline: true }
+          log.info('QUALITY GATES')
+        }
+      }//close steps
+    }//close stage - QUALITY GATES
+
+    stage('Build') {
+      steps {
+        script{
+          container.run(
+            flags:"-v ${WORKSPACE}:/code/:Z -w /code/",
+            dockerImage:"ubn.nodejs.npm:v12.17.0",
+            command:"npm run build"
+          )
+          log.info('NPM BUILD')
+        }
+      }//close steps
+    }//close stage - BUILD
+
+
+    stage('Artifact Creation') {
+      steps {
+        script{
+          container.run(
+            flags:"-v ${WORKSPACE}:/code/:Z -w /code/",
+            dockerImage:"ubn.nodejs.npm:v12.17.0",
+            command:"tar -C dist/co-angular-ppublic-contact-us -czf ${_APP_NAME}-${_APP_VERSION}-${BUILD_NUMBER}.tar.gz ."
+          )
+          log.info("ARTIFACT CREATION - ${_APP_NAME}-${_APP_VERSION}-${BUILD_NUMBER}.tar.gz")
+        }
+      }//close steps
+    }//close stage - Artifact Creation
+
+    stage('Upload Artifactory') {
+        steps {
+          script{
+              def path_artifactory = "portal_público_qa"
+              if (env.gitlabSourceBranch != "master") { path_artifactory="portal_público_dev" }
+              artifactory.upload(
+              flags: "-v ${WORKSPACE}:/code/:Z -v ${_JFROG_CO_CONFIG_FILE}:/home/admindok/.jfrog/jfrog-cli.conf:Z -w /code/",
+              dockerImage: "ubn.artifactory.jfrog:v1.35.3",
+              sourcePath: "${_APP_NAME}-${_APP_VERSION}-${BUILD_NUMBER}.tar.gz",
+              targetPath: "/${path_artifactory}/front-end/${_APP_NAME}/${_APP_VERSION}/",
+              properties: "commit-hash=${_GIT_COMMIT_HASH}"
+            )
+            log.info('UPLOAD ARTIFACTORY')
+           
+          }
+        }//close steps
+      }//close stage - UPLOAD ARTIFACTORY
+  }//close stages 
+
+  post {
+    always {
+      echo "Eliminando contenido del workspace...."
+      cleanWs()
+    }
+  }//close post
+}//close pipeline
