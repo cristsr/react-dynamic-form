@@ -1,5 +1,5 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useCallback } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 import Switch from './FormComponents';
 
 const formTypes = {
@@ -9,6 +9,7 @@ const formTypes = {
   password: 'password',
   select: 'select',
   radio: 'radio',
+  check: 'check',
 }
 
 const configModel = [
@@ -72,8 +73,7 @@ const configModel = [
     name: 'genderRadio',
     type: formTypes.radio,
     label: 'Select your gender',
-    defaultValue: 'Select an option',
-    display: 'row',
+    // display: 'row',
     validators: {
       required: {
         value: true,
@@ -91,14 +91,56 @@ const configModel = [
       },
     ]
   },
+  {
+    name: 'hobbies',
+    type: formTypes.check,
+    label: 'Select your gender',
+    display: 'row',
+    validators: {
+      required: {
+        value: true,
+        message: 'Hobbies is required.'
+      }
+    },
+    options: [
+      {
+        value: 'play guitar',
+        label: 'PlayGuitar'
+      },
+    ]
+  },
 ]
 
-const Form = () => {
-  const { register, handleSubmit, errors } = useForm({mode: 'onChange'});
+const createValidators = (conf, formState) => {
+  if (!conf.validate) {
+    return conf;
+  }
+
+  const validate = Object.keys(conf.validate)
+    .map(key => ({
+      key,
+      fn: conf.validate[key](formState)
+    }))
+    .reduce((acc, curr) => ({...acc, [curr.key]: curr.fn}), {});
+
+  return {
+    ...conf,
+    validate
+  }
+}
+
+
+const Form = ({config}) => {
+  const  methods = useForm({mode: 'onChange'});
+  const { register, handleSubmit, errors, getValues } = methods;
   const onSubmit = data => console.log('[DATA]', data);
   console.log('ERRORS', errors);
+  console.log('[VALUES]', getValues())
 
-  const inputs = configModel.map(({type, ...value}, index) => {
+  const inputs = config.map(({type, ...value}, index) => {
+
+    const validators = createValidators(value.validators, methods);
+
     const getCurrentError = () => {
       if (Object.keys(errors).length === 0) {
         return false;
@@ -114,6 +156,8 @@ const Form = () => {
     const props = {
       ...value,
       register,
+      methods,
+      validators,
       error: getCurrentError()
     }
 
@@ -121,12 +165,11 @@ const Form = () => {
   })
 
   return (
-    <div className="col-md-4 my-5 mx-auto">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        {inputs}
-        <input type="submit" />
-      </form>
-    </div>
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {inputs}
+      <input type="submit" />
+    </form>
+
   );
 };
 

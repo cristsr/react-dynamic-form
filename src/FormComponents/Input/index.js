@@ -10,7 +10,13 @@ const Input = (props) => {
     validators,
     placeholder,
     error,
+    methods,
   } = props;
+
+  // if (validators.validate) {
+  //   const fn = validators.validate;
+  //   validators.validate = v => fn(v, methods);
+  // }
 
   return (
     <div className="form-group">

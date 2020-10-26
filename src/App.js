@@ -1,9 +1,13 @@
 import React from 'react';
-import Form from './Form';
+import Login from './Pages/Login';
 
 function App() {
   return (
-    <Form/>
+    <div className="container">
+      <div className="col-md-4 my-5 mx-auto">
+        <Login/>
+      </div>
+    </div>
   );
 }
 

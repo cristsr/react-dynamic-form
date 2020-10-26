@@ -2,6 +2,7 @@ import React from 'react';
 import Select from './Select';
 import Input from './Input';
 import Radio from './Radio';
+import Check from './Check';
 
 export const componentsRegistry = {
   select: Select,
@@ -9,6 +10,7 @@ export const componentsRegistry = {
   email: Input,
   password: Input,
   radio: Radio,
+  check: Check,
 };
 
 export const formTypes = {
@@ -16,6 +18,7 @@ export const formTypes = {
   text: 'text',
   password: 'password',
   radio: 'radio',
+  check: 'check',
 }
 
 const Switch = ({ type, ...rest }) => {
