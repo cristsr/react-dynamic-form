@@ -2,11 +2,10 @@ import React from 'react';
 import { Section } from '../../Shared';
 
 const Radio = (props) => {
-  // console.log('[INPUT PROPS]', props)
   const {
     name,
     label,
-    register,
+    methods,
     validators,
     options,
     error,
@@ -24,7 +23,7 @@ const Radio = (props) => {
               type="radio"
               name={name}
               id={i + 'radio-input'}
-              ref={register(validators)}
+              ref={methods.register(validators)}
               value={option.value}/>
             <label className="form-check-label" htmlFor={i + 'radio-input'}>
               {option.label}

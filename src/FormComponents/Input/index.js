@@ -1,34 +1,29 @@
 import React from 'react';
+import uid from 'uid';
 
 const Input = (props) => {
-  // console.log('[INPUT PROPS]', props)
   const {
     type,
     name,
     label,
-    register,
+    methods,
     validators,
     placeholder,
     error,
-    methods,
   } = props;
 
-  // if (validators.validate) {
-  //   const fn = validators.validate;
-  //   validators.validate = v => fn(v, methods);
-  // }
-
+  const id = uid();
   return (
     <div className="form-group">
-      <label htmlFor={name}>{label}</label>
+      <label htmlFor={id}>{label}</label>
       <input
         className={'form-control'.concat(error ? ' is-invalid' : '')}
         type={type}
-        id={name}
+        id={id}
         name={name}
         placeholder={placeholder}
-        ref={register(validators)}/>
-      {error &&  <small className="text-danger">{error.message}</small>}
+        ref={methods.register(validators)}/>
+      {error &&  <small className="text-danger">{<error className="message"></error>}</small>}
     </div>
   )
 };

@@ -1,4 +1,3 @@
-import React from 'react';
 import Select from './Select';
 import Input from './Input';
 import Radio from './Radio';
@@ -20,10 +19,3 @@ export const formTypes = {
   radio: 'radio',
   check: 'check',
 }
-
-const Switch = ({ type, ...rest }) => {
-  const Component = componentsRegistry[type];
-  return <Component {...rest}/>;
-}
-
-export default Switch;

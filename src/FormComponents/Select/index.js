@@ -4,7 +4,7 @@ const Select = (props) => {
   const {
     name,
     label,
-    register,
+    methods,
     validators,
     error,
     defaultValue,
@@ -18,7 +18,7 @@ const Select = (props) => {
         className={'form-control'.concat(error ? ' is-invalid' : '')}
         id={name}
         name={name}
-        ref={register(validators)}>
+        ref={methods.register(validators)}>
         <option value="">{defaultValue || 'Select an option'}</option>
         {options.map((value, index) => (<option value={value.value} key={index}>{value.value}</option>))}
       </select>

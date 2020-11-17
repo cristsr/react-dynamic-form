@@ -63,5 +63,13 @@ export const loginForm = [
         matchPassword: methods => current => current === methods.getValues('password') || 'Passwords does not match.',
       }
     }
+  },
+  {
+    name: 'termsAndConditions',
+    type: formTypes.check,
+    display: 'center',
+    options: [
+      {value: true, label: 'Aceptar terminos y condiciones'}
+    ]
   }
 ];
